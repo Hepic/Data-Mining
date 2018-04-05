@@ -11,10 +11,47 @@ from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
 
+def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainText, categoryIds, le):
+    scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10)
+    print 'Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2)
+
+    kf = KFold(n_splits=10)
+    fold = 0
+    prec, rec, f1, accur = 0, 0, 0, 0
+
+    for trainIndex, testIndex in kf.split(trainData):
+        kfFreqVecTrain = vectorizer.transform(np.array(trainText)[trainIndex])
+        kfFreqVecTest = vectorizer.transform(np.array(trainText)[testIndex])
+
+        kfTestCategIds = le.transform(trainData['Category'][testIndex])
+
+        clf.fit(kfFreqVecTrain, categoryIds[trainIndex])
+        kfTestPredIds = clf.predict(kfFreqVecTest)
+        fold += 1
+
+        #print "Fold " + str(fold)
+        #print classification_report(kfTestCategIds, kfTestPredIds, target_names=list(le.classes_))
+
+        ret = precision_score(kfTestCategIds, kfTestPredIds, average=None)
+        prec += float(sum(ret)) / float(len(ret))
+
+        ret = recall_score(kfTestCategIds, kfTestPredIds, average=None)
+        rec += float(sum(ret)) / float(len(ret))
+
+        ret = f1_score(kfTestCategIds, kfTestPredIds, average=None)
+        f1 += float(sum(ret)) / float(len(ret))
+
+        accur += accuracy_score(kfTestCategIds, kfTestPredIds)
+
+    prec, rec, f1, accur = prec / 10.0, rec / 10.0, f1 / 10.0, accur / 10.0
+    info[name].extend([accur, prec, rec, f1])
+
+
 def processText(text):
     stopWords = stopwords.words('english')
     tokens = word_tokenize(text)
 
+    # remove stop-words
     tokens = [wrd for wrd in tokens if wrd not in stopWords]
 
     stemmer = PorterStemmer()
@@ -24,7 +61,7 @@ def processText(text):
 
 
 def classifiers(trainData, testData, clfNames):
-    trainData = trainData[:50]
+    trainData = trainData[:400]
     testData = testData[:2]
 
     # Labels for categories
@@ -58,15 +95,23 @@ def classifiers(trainData, testData, clfNames):
 
         clfSvc = svm.SVC()
         clf = GridSearchCV(clfSvc, parameters)
-        clfs.append(clf)
+        clfs.append((clf, 'SVM'))
 
     if 'RandomForest' in clfNames:
         clf = RandomForestClassifier()
-        clfs.append(clf)
+        clfs.append((clf, 'Random Forest'))
 
-    if 'MultinomialNB':
+    if 'MultinomialNB' in clfNames:
         clf = MultinomialNB()
-        clfs.append(clf)
+        clfs.append((clf, 'Naive Bayes'))
+
+    if 'KNN' in clfNames:
+        clf = MultinomialNB()
+        clfs.append((clf, 'KNN'))
+
+    if 'My Method' in clfNames:
+        clf = MultinomialNB()
+        clfs.append((clf, 'My Method'))
 
     # Information for the csv file
     info = {
@@ -79,37 +124,8 @@ def classifiers(trainData, testData, clfNames):
     }
 
     # Run classifiers
-    for clf in clfs:
-        # Cross Validation
-        scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10)
-        print 'Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2)
-
-        kf = KFold(n_splits=10)
-        fold = 0
-
-        for train_index, test_index in kf.split(trainData):
-            kfFreqVecTrain = vectorizer.transform(np.array(trainText)[train_index])
-            kfFreqVecTest = vectorizer.transform(np.array(trainText)[test_index])
-
-            kfTestCategIds = le.transform(trainData['Category'][test_index])
-
-            clf.fit(kfFreqVecTrain, categoryIds[train_index])
-            kfTestPredIds = clf.predict(kfFreqVecTest)
-            fold += 1
-
-            print "Fold " + str(fold)
-            print classification_report(kfTestCategIds, kfTestPredIds, target_names=list(le.classes_))
-
-            ret = precision_score(kfTestCategIds, kfTestPredIds, average=None)
-            print float(sum(ret)) / float(len(ret))
-
-            ret = recall_score(kfTestCategIds, kfTestPredIds, average=None)
-            print float(sum(ret)) / float(len(ret))
-
-            ret = f1_score(kfTestCategIds, kfTestPredIds, average=None)
-            print float(sum(ret)) / float(len(ret))
-
-            print accuracy_score(kfTestCategIds, kfTestPredIds)
+    for clf, name in clfs:
+        crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainText, categoryIds, le)
 
         # Train with real trainSet and predict for real testSet
         clf.fit(freqVecTrain, categoryIds)
@@ -120,5 +136,6 @@ def classifiers(trainData, testData, clfNames):
         print predCategs
 
     # Print output to csv file
-    df = pd.DataFrame(info, columns=['Statistic Measure', 'Naive Bayes', 'Random Forest', 'SVM', 'KNN', 'My Method'])
-    df.to_csv('EvaluationMetric_10fold.csv', sep='\t')
+    if len(clfs) == 5:
+        df = pd.DataFrame(info, columns=['Statistic Measure', 'Naive Bayes', 'Random Forest', 'SVM', 'KNN', 'My Method'])
+        df.to_csv('EvaluationMetric_10fold.csv', sep='\t', index=False)
