@@ -6,15 +6,19 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import GridSearchCV, cross_val_score, KFold
 from sklearn.metrics import classification_report, precision_score, recall_score, f1_score, accuracy_score
+from sklearn.decomposition import TruncatedSVD
 from nltk import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet
+from collections import Counter
 
 
 def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainText, categoryIds, le):
     scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10)
     print 'Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2)
-
+'''
     kf = KFold(n_splits=10)
     fold = 0
     prec, rec, f1, accur = 0, 0, 0, 0
@@ -45,6 +49,19 @@ def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainT
 
     prec, rec, f1, accur = prec / 10.0, rec / 10.0, f1 / 10.0, accur / 10.0
     info[name].extend([accur, prec, rec, f1])
+'''
+
+def getPos(word):
+    wSynsets = wordnet.synsets(word)
+
+    pos_counts = Counter()
+    pos_counts['n'] = len([item for item in wSynsets if item.pos() == 'n'])
+    pos_counts['v'] = len([item for item in wSynsets if item.pos() == 'v'])
+    pos_counts['a'] = len([item for item in wSynsets if item.pos() == 'a']  )
+    pos_counts['r'] = len([item for item in wSynsets if item.pos() == 'r']  )
+
+    mostCommonPosList = pos_counts.most_common(3)
+    return mostCommonPosList[0][0]
 
 
 def processText(text):
@@ -54,6 +71,9 @@ def processText(text):
     # remove stop-words
     tokens = [wrd for wrd in tokens if wrd not in stopWords]
 
+    lemmatizer = WordNetLemmatizer()
+    tokens = [lemmatizer.lemmatize(t, getPos(t)) for t in tokens]
+
     stemmer = PorterStemmer()
     tokens = [stemmer.stem(t) for t in tokens]
 
@@ -61,8 +81,8 @@ def processText(text):
 
 
 def classifiers(trainData, testData, clfNames):
-    trainData = trainData[:400]
-    testData = testData[:2]
+    trainData = trainData[:500]
+    testData = testData[:10]
 
     # Labels for categories
     le = preprocessing.LabelEncoder()
@@ -85,6 +105,11 @@ def classifiers(trainData, testData, clfNames):
     freqVecTrain = vectorizer.transform(trainText)
     freqVecTest = vectorizer.transform(testText)
     clfs = []
+
+    # Truncation
+    svd = TruncatedSVD(n_components=10)
+    freqVecTrain = svd.fit_transform(freqVecTrain)
+    freqVecTest = svd.fit_transform(freqVecTest)
 
     # Add classifiers that belong to 'clfNames' list
     if 'SVC' in clfNames:
