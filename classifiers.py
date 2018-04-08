@@ -54,13 +54,13 @@ def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainT
 def getPos(word):
     wSynsets = wordnet.synsets(word)
 
-    pos_counts = Counter()
-    pos_counts['n'] = len([item for item in wSynsets if item.pos() == 'n'])
-    pos_counts['v'] = len([item for item in wSynsets if item.pos() == 'v'])
-    pos_counts['a'] = len([item for item in wSynsets if item.pos() == 'a']  )
-    pos_counts['r'] = len([item for item in wSynsets if item.pos() == 'r']  )
+    posCounts = Counter()
+    posCounts['n'] = len([item for item in wSynsets if item.pos() == 'n'])
+    posCounts['v'] = len([item for item in wSynsets if item.pos() == 'v'])
+    posCounts['a'] = len([item for item in wSynsets if item.pos() == 'a']  )
+    posCounts['r'] = len([item for item in wSynsets if item.pos() == 'r']  )
 
-    mostCommonPosList = pos_counts.most_common(3)
+    mostCommonPosList = posCounts.most_common(3)
     return mostCommonPosList[0][0]
 
 
