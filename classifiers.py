@@ -13,10 +13,11 @@ from nltk.stem.porter import PorterStemmer
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from collections import Counter
+from knn import KNN
 
 
 def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainText, categoryIds, le):
-    scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10)
+    scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10, scoring='accuracy')
     print 'Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2)
 '''
     kf = KFold(n_splits=10)
@@ -82,8 +83,8 @@ def processText(text):
 
 def classifiers(trainData, testData, clfNames):
     trainData = trainData[:500]
-    testData = testData[:10]
-
+    #testData = testData[:10]
+    
     # Labels for categories
     le = preprocessing.LabelEncoder()
     categoryIds = le.fit_transform(trainData['Category'])
@@ -107,7 +108,7 @@ def classifiers(trainData, testData, clfNames):
     clfs = []
 
     # Truncation
-    svd = TruncatedSVD(n_components=10)
+    svd = TruncatedSVD(n_components=100)
     freqVecTrain = svd.fit_transform(freqVecTrain)
     freqVecTest = svd.fit_transform(freqVecTest)
 
@@ -131,9 +132,9 @@ def classifiers(trainData, testData, clfNames):
         clfs.append((clf, 'Naive Bayes'))
 
     if 'KNN' in clfNames:
-        clf = MultinomialNB()
+        clf = KNN(4)
         clfs.append((clf, 'KNN'))
-
+    
     if 'My Method' in clfNames:
         clf = MultinomialNB()
         clfs.append((clf, 'My Method'))
@@ -146,7 +147,7 @@ def classifiers(trainData, testData, clfNames):
         'SVM': [],
         'KNN': [],
         'My Method': []
-    }
+    } 
 
     # Run classifiers
     for clf, name in clfs:
@@ -158,7 +159,22 @@ def classifiers(trainData, testData, clfNames):
         predIds = clf.predict(freqVecTest)
         predCategs = le.inverse_transform(predIds)
 
-        print predCategs
+        # Print predicted output to csv file
+        if len(clfs) == 1:
+            predInfo = {
+                'Id': [],
+                'Category': []
+            }
+            
+            testDataArr = np.array(testData)
+
+            # pos=1 is id
+            for i in range(len(testDataArr)):
+                predInfo['Id'].append(testDataArr[i][1])
+                predInfo['Category'].append(predCategs[i])
+
+            df = pd.DataFrame(predInfo, columns=['Id', 'Category'])
+            df.to_csv('testSet_categories.csv', sep=',', index=False)
 
     # Print output to csv file
     if len(clfs) == 5:
