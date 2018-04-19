@@ -6,7 +6,7 @@ def main():
     trainData = pd.read_csv('datasets/train_set.csv', sep='\t')
     testData = pd.read_csv('datasets/test_set.csv', sep='\t')
 
-    classifiers(trainData, testData, ['RandomForest'])
+    classifiers(trainData, testData, ['MultinomialNB'])
 
 
 if __name__ == '__main__':

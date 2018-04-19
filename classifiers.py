@@ -82,8 +82,8 @@ def processText(text):
 
 
 def classifiers(trainData, testData, clfNames):
-    trainData = trainData[:500]
-    #testData = testData[:10]
+    trainData = trainData[:1000]
+    testData = testData[:200]
     
     # Labels for categories
     le = preprocessing.LabelEncoder()
@@ -94,23 +94,21 @@ def classifiers(trainData, testData, clfNames):
 
     # pos=3 is content, pos=2 is title
     for elem in np.array(trainData):
-        trainText.append(elem[3] + elem[2])
-        trainText[-1] += elem[2] * int(len(elem[3]) / 200)
-
+        trainText.append((elem[3] + elem[2] * (1 + int(len(elem[3]) / 200))).lower())
+    
     for elem in np.array(testData):
-        testText.append(elem[3] + elem[2])
-        testText[-1] += elem[2] * int(len(elem[3]) / 200)
-
+        testText.append((elem[3] + elem[2] * (1 + int(len(elem[3]) / 200))).lower())
+    
     # Vectorization
-    vectorizer = TfidfVectorizer(tokenizer=processText, ngram_range=(1, 2), stop_words='english').fit(trainText)
+    vectorizer = CountVectorizer(tokenizer=processText, ngram_range=(1, 2), stop_words='english').fit(trainText)
     freqVecTrain = vectorizer.transform(trainText)
     freqVecTest = vectorizer.transform(testText)
     clfs = []
 
     # Truncation
-    svd = TruncatedSVD(n_components=100)
-    freqVecTrain = svd.fit_transform(freqVecTrain)
-    freqVecTest = svd.fit_transform(freqVecTest)
+    #svd = TruncatedSVD(n_components=200)
+    #freqVecTrain = svd.fit_transform(freqVecTrain)
+    #freqVecTest = svd.fit_transform(freqVecTest)
 
     # Add classifiers that belong to 'clfNames' list
     if 'SVC' in clfNames:
