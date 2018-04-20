@@ -51,5 +51,6 @@ def main():
         plt.axis('off')
         fig.savefig('static/' + le.inverse_transform(i) + '.png')
 
+
 if __name__ == '__main__':
     main()
