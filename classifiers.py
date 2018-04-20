@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn import svm, preprocessing
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import RandomForestClassifier
@@ -20,7 +21,8 @@ def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainT
     scores = cross_val_score(clf, freqVecTrain, categoryIds, cv=10, scoring='accuracy')
     print 'Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std() * 2)
 '''
-    kf = KFold(n_splits=10)
+    splits = 10
+    kf = KFold(n_splits=splits)
     fold = 0
     prec, rec, f1, accur = 0, 0, 0, 0
 
@@ -28,6 +30,7 @@ def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainT
         kfFreqVecTrain = vectorizer.transform(np.array(trainText)[trainIndex])
         kfFreqVecTest = vectorizer.transform(np.array(trainText)[testIndex])
 
+        #TODO Use svd
         kfTestCategIds = le.transform(trainData['Category'][testIndex])
 
         clf.fit(kfFreqVecTrain, categoryIds[trainIndex])
@@ -48,7 +51,7 @@ def crossValidation(info, clf, name, trainData, vectorizer, freqVecTrain, trainT
 
         accur += accuracy_score(kfTestCategIds, kfTestPredIds)
 
-    prec, rec, f1, accur = prec / 10.0, rec / 10.0, f1 / 10.0, accur / 10.0
+    prec, rec, f1, accur = prec / float(splits), rec / float(splits), f1 / float(splits), accur / float(splits)
     info[name].extend([accur, prec, rec, f1])
 '''
 
@@ -81,10 +84,44 @@ def processText(text):
     return tokens
 
 
+def SVDgraph(trainData, vectorizer, trainText, categoryIds, le):
+    clf = svm.SVC(kernel='linear')
+    xAxes, yAxes = [], []
+    splits = 3
+
+    # Try truncation with multiple components
+    for comp in range(10, 60, 15):
+        kf = KFold(n_splits=splits)
+        accur = 0
+
+        for trainIndex, testIndex in kf.split(trainData):
+            kfFreqVecTrain = vectorizer.transform(np.array(trainText)[trainIndex])
+            kfFreqVecTest = vectorizer.transform(np.array(trainText)[testIndex])
+
+            # Truncation
+            svd = TruncatedSVD(n_components=comp)
+            kfFreqVecTrain = svd.fit_transform(kfFreqVecTrain)
+            kfFreqVecTest = svd.fit_transform(kfFreqVecTest)
+
+            kfTestCategIds = le.transform(trainData['Category'][testIndex])
+
+            clf.fit(kfFreqVecTrain, categoryIds[trainIndex])
+            kfTestPredIds = clf.predict(kfFreqVecTest)
+
+            accur += accuracy_score(kfTestCategIds, kfTestPredIds)
+
+        accur /= float(splits)
+        xAxes.append(comp)
+        yAxes.append(accur)
+
+    plt.plot(xAxes, yAxes)
+    plt.show()
+
+
 def classifiers(trainData, testData, clfNames):
-    trainData = trainData[:1000]
-    testData = testData[:200]
-    
+    trainData = trainData[:200]
+    testData = testData[:1]
+
     # Labels for categories
     le = preprocessing.LabelEncoder()
     categoryIds = le.fit_transform(trainData['Category'])
@@ -95,18 +132,19 @@ def classifiers(trainData, testData, clfNames):
     # pos=3 is content, pos=2 is title
     for elem in np.array(trainData):
         trainText.append((elem[3] + elem[2] * (1 + int(len(elem[3]) / 200))).lower())
-    
+
     for elem in np.array(testData):
         testText.append((elem[3] + elem[2] * (1 + int(len(elem[3]) / 200))).lower())
-    
+
     # Vectorization
-    vectorizer = CountVectorizer(tokenizer=processText, ngram_range=(1, 2), stop_words='english').fit(trainText)
+    vectorizer = TfidfVectorizer(tokenizer=processText, ngram_range=(1, 2), stop_words='english').fit(trainText)
     freqVecTrain = vectorizer.transform(trainText)
     freqVecTest = vectorizer.transform(testText)
     clfs = []
 
     # Truncation
-    #svd = TruncatedSVD(n_components=200)
+    #SVDgraph(trainData, vectorizer, trainText, categoryIds, le)
+    #svd = TruncatedSVD(n_components=5)
     #freqVecTrain = svd.fit_transform(freqVecTrain)
     #freqVecTest = svd.fit_transform(freqVecTest)
 
@@ -132,7 +170,7 @@ def classifiers(trainData, testData, clfNames):
     if 'KNN' in clfNames:
         clf = KNN(4)
         clfs.append((clf, 'KNN'))
-    
+
     if 'My Method' in clfNames:
         clf = MultinomialNB()
         clfs.append((clf, 'My Method'))
@@ -145,7 +183,7 @@ def classifiers(trainData, testData, clfNames):
         'SVM': [],
         'KNN': [],
         'My Method': []
-    } 
+    }
 
     # Run classifiers
     for clf, name in clfs:
@@ -163,7 +201,7 @@ def classifiers(trainData, testData, clfNames):
                 'Id': [],
                 'Category': []
             }
-            
+
             testDataArr = np.array(testData)
 
             # pos=1 is id
