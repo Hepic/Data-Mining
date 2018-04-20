@@ -22,9 +22,10 @@ def main():
     stopWords = stopwords.words('english')
     stopWords.extend(['saying', 'said', 'say', 'yes', 'instead', 'meanwhile', 'right', 'really', 'finally', 'now', 
                        'one', 'suggested', 'says', 'added', 'think', 'know', 'though', 'let', 'going', 'back',
-                       'well', 'example', 'us', 'yet', 'perhaps', 'actually', 'oh', '7m', '5m', '5bn', 'year',
-                       'lastyear', '6bn', 'last', 'old', 'first', 'good', 'maybe', 'ask', '.', ',', ':'])
-
+                       'well', 'example', 'us', 'yet', 'perhaps', 'actually', 'oh', 'year', 'lastyear',
+                       'last', 'old', 'first', 'good', 'maybe', 'ask', '.', ',', ':', 'take' 'made', 'n\'t', 'go', 
+                       'make', 'two', 'got', 'took', 'want', 'much', 'may', 'never', 'second'])
+    
     # pos=3 is content, pos=2 is title, pos=4 is category
     for elem in np.array(trainData):
         pos = le.transform([elem[4]])[0]
@@ -34,22 +35,21 @@ def main():
         
         for wrd in tokens: # words from content
             if wrd not in stopWords:
-                groups[pos] += wrd
+                groups[pos] += wrd + ' '
         
         titleText = elem[2].decode('utf-8').lower()
         tokens = word_tokenize(titleText)
 
         for wrd in tokens: # words from title 
             if wrd not in stopWords:
-                groups[pos] += wrd
+                groups[pos] += wrd + ' '
     
     for i in range(categLen):
         wordcloud = WordCloud(max_font_size=40).generate(groups[i])
-        plt.figure()
+        fig = plt.figure()
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
-        plt.show()
-
+        fig.savefig('static/' + le.inverse_transform(i) + '.png')
 
 if __name__ == '__main__':
     main()
