@@ -14,11 +14,13 @@ class KNN(BaseEstimator):
 
         for query in predData:
             allDstQuer, closerIds = [], Counter() 
-
+            
+            # find distance from every other point
             for vec in self.data:
                 dst = self.dist(vec[0], query)
                 allDstQuer.append((dst, vec[1]))
-
+            
+            # sort distances so as to find K smallest
             allDstQuer.sort()
             
             for i in range(self.K):
