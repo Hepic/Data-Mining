@@ -9,12 +9,11 @@ from sklearn import svm, preprocessing
 
 def main():
     trainData = pd.read_csv('datasets/train_set.csv', sep='\t')
-    trainData = trainData[:1000]
     
     # Labels for categories
     le = preprocessing.LabelEncoder()
     categoryIds = le.fit_transform(trainData['Category'])
-    
+
     categLen = len(set(categoryIds))
     groups = ['' for i in range(categLen)]
     
