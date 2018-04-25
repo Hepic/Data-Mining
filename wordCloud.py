@@ -23,7 +23,7 @@ def main():
                        'one', 'suggested', 'says', 'added', 'think', 'know', 'though', 'let', 'going', 'back',
                        'well', 'example', 'us', 'yet', 'perhaps', 'actually', 'oh', 'year', 'lastyear',
                        'last', 'old', 'first', 'good', 'maybe', 'ask', '.', ',', ':', 'take' 'made', 'n\'t', 'go', 
-                       'make', 'two', 'got', 'took', 'want', 'much', 'may', 'never', 'second'])
+                       'make', 'two', 'got', 'took', 'want', 'much', 'may', 'never', 'second', 'still'])
     
     # pos=3 is content, pos=2 is title, pos=4 is category
     for elem in np.array(trainData):
