@@ -226,16 +226,16 @@ def classifiers(trainData, testData, clfNames):
         # Print predicted output to csv file
         if len(clfs) == 1:
             predInfo = {
-                'Id': [],
-                'Category': []
+                'ID': [],
+                'Predicted_Category': []
             }
 
             testDataArr = np.array(testData)
 
             # pos=1 is id
             for i in range(len(testDataArr)):
-                predInfo['Id'].append(testDataArr[i][1])
-                predInfo['Category'].append(predCategs[i])
+                predInfo['ID'].append(testDataArr[i][1])
+                predInfo['Predicted_Category'].append(predCategs[i])
 
             df = pd.DataFrame(predInfo, columns=['ID', 'Predicted_Category'])
             df.to_csv('testSet_categories.csv', sep='\t', index=False)
