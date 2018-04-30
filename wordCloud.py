@@ -13,7 +13,7 @@ def main():
     # Labels for categories
     le = preprocessing.LabelEncoder()
     categoryIds = le.fit_transform(trainData['Category'])
-
+    
     categLen = len(set(categoryIds))
     groups = ['' for i in range(categLen)]
     
@@ -22,8 +22,10 @@ def main():
     stopWords.extend(['saying', 'said', 'say', 'yes', 'instead', 'meanwhile', 'right', 'really', 'finally', 'now', 
                        'one', 'suggested', 'says', 'added', 'think', 'know', 'though', 'let', 'going', 'back',
                        'well', 'example', 'us', 'yet', 'perhaps', 'actually', 'oh', 'year', 'lastyear',
-                       'last', 'old', 'first', 'good', 'maybe', 'ask', '.', ',', ':', 'take' 'made', 'n\'t', 'go', 
-                       'make', 'two', 'got', 'took', 'want', 'much', 'may', 'never', 'second', 'still'])
+                       'last', 'old', 'first', 'good', 'maybe', 'ask', '.', ',', ':', 'take', 'made', 'n\'t', 'go', 
+                       'make', 'two', 'got', 'took', 'want', 'much', 'may', 'never', 'second', 'still', 'might', 
+                       'something', 'even', 'new', 'lot', 'a', 'thing', 'time', 'way', 'always', 'whose', 'need',
+                       'people', 'come', 'become', 'another'])
     
     # pos=3 is content, pos=2 is title, pos=4 is category
     for elem in np.array(trainData):
@@ -33,7 +35,7 @@ def main():
         tokens = word_tokenize(contentText)
         
         for wrd in tokens: # words from content
-            if wrd not in stopWords:
+            if wrd not in stopWords: 
                 groups[pos] += wrd + ' '
         
         titleText = elem[2].decode('utf-8').lower()
@@ -45,6 +47,7 @@ def main():
     
     for i in range(categLen):
         wordcloud = WordCloud(max_font_size=40).generate(groups[i])
+        
         fig = plt.figure()
         plt.imshow(wordcloud, interpolation='bilinear')
         plt.axis('off')
